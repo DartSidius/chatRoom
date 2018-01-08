@@ -8,25 +8,38 @@ package chatroom;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
+import java.io.Serializable;
 import java.net.Socket;
+import java.util.function.Consumer;
 
 /**
  *
  * @author vladl
  */
-public class Client {
-    private Socket clientSocket = new Socket("127.0.0.1", 1234);
-    private DataInputStream in = new DataInputStream(clientSocket.getInputStream());
-    private DataOutputStream out = new DataOutputStream(clientSocket.getOutputStream());
-    public Client() throws IOException {
-        this.clientSocket = clientSocket;
-        this.in = in;
-        this.out = out;
+public class Client extends NetworkConnection {
+
+    private String IP;
+    private int port;
+    
+    public Client(String IP, int port, Consumer<Serializable> onReceiveCallback) {
+        super(onReceiveCallback);
+        this.IP = IP;
+        this.port = port;
     }
-    public void sendMessage(String msg) throws IOException {
-        this.out.writeUTF(msg);
+
+    @Override
+    protected boolean isServer() {
+        return false;
     }
-    public String getMessage() throws IOException {
-        return this.in.readUTF();
+
+    @Override
+    protected String getIP() {
+        return this.IP;
     }
+
+    @Override
+    protected int getPort() {
+        return this.port;
+    }
+    
 }

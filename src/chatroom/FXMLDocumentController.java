@@ -8,6 +8,9 @@ package chatroom;
 import java.io.IOException;
 import java.net.URL;
 import java.util.ResourceBundle;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.control.ListView;
@@ -23,35 +26,45 @@ public class FXMLDocumentController implements Initializable {
     private TextArea message;
     @FXML
     private ListView messageList;
-    private final boolean isServer = true;
+    private final boolean isServer = false;
+    private NetworkConnection connection;
     
-    private void defineChatMember() throws IOException {
-        if(!isServer) {
-            Client chatMember = new Client();
-        } else {
-            Server chatMember = new Server();
-        }
+    private Server createServer() {
+        return new Server(1234, data -> {
+            Platform.runLater(() -> {
+                messageList.getItems().add(data.toString());
+            });
+        });
     }
-    private void displayMessages(String msg) {
-        messageList.getItems().add(msg);
-    } 
+    
+    private Client createClient() {
+        return new Client("127.0.0.1", 1234, data -> {
+            Platform.runLater(() -> {
+                messageList.getItems().add(data.toString());
+            });
+        });
+    }
+    
     @FXML 
-    private void sendMessage() throws IOException {
-        defineChatMember();
-        String messageContent = isServer ? "Server: " + message.getText() : "Client: " + message.getText();
-        displayMessages(messageContent);
+    private void sendMessage() throws IOException, Exception {
+        String messageContent = isServer ? "Server: " : "Client: ";
+        messageContent += message.getText();
         
-        Client chatMember = new Client();
-        // Server chatMember = new Server();
-        
-        chatMember.sendMessage(messageContent);
-        
+        messageList.getItems().add(messageContent);
+
         message.clear();
+        
+        connection.send(messageContent);
     }
     
     @Override
     public void initialize(URL url, ResourceBundle rb) {
-        System.out.println(isServer);
+        connection = isServer ? createServer() : createClient();
+        try {
+            connection.startConnection();
+        } catch (Exception ex) {
+            Logger.getLogger(FXMLDocumentController.class.getName()).log(Level.SEVERE, null, ex);
+        }
     }    
     
 }
